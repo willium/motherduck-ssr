@@ -13,6 +13,17 @@ export default function Page() {
 			console.warn("No connection found")
 			return
 		}
+
+		if (typeof window === "undefined") {
+			console.warn("Attempted to query connection on the server side.")
+			return
+		}
+
+		if (typeof Worker === "undefined") {
+			console.error("Web Workers are not supported while querying.")
+			return
+		}
+
 		md.connection
 			.safeEvaluateQuery(
 				`
@@ -35,8 +46,12 @@ export default function Page() {
 					setRows(rows)
 					console.log({ rows })
 				} else {
-					console.error(result.err)
+					console.error("Query failed with error:", result.err)
 				}
+			})
+			.catch((error) => {
+				// Catch any errors that occur during the query execution
+				console.error("An error occurred while executing the query:", error)
 			})
 	}, [md.connection])
 

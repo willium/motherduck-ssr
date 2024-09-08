@@ -30,7 +30,23 @@ export function MotherDuckProvider({
 		}
 
 		const establishConnection = async () => {
-			const _connection = MDConnection.create({ mdToken })
+			if (typeof window === "undefined") {
+				console.warn("Attempted to establish connection on the server side.")
+				return
+			}
+
+			if (typeof Worker === "undefined") {
+				console.error("Web Workers are not supported in this environment.")
+				return
+			}
+
+			let _connection: MDConnection | null = null
+			try {
+				_connection = MDConnection.create({ mdToken })
+			} catch (error) {
+				console.error("Failed to create DuckDB connection", error)
+				return
+			}
 
 			const success = await _connection.isInitialized()
 			setIsInitialized(success)
