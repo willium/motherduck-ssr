@@ -36,20 +36,18 @@ export function MotherDuckProvider({
 				return
 			}
 
-			let MDConnection:
-				| typeof import("@motherduck/wasm-client").MDConnection
-				| null = null
 			try {
 				// Dynamically import MDConnection
-				MDConnection = await import("@motherduck/wasm-client").then(
+				const MDConnection = await import("@motherduck/wasm-client").then(
 					(mod) => mod.MDConnection
 				)
+
 				if (!MDConnection) {
 					console.error("Failed to load MDConnection")
 					return
 				}
-				const _connection = MDConnection.create({ mdToken })
 
+				const _connection = MDConnection.create({ mdToken })
 				const success = await _connection.isInitialized()
 				setIsInitialized(success)
 
