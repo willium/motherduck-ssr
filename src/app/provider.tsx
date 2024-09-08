@@ -1,8 +1,9 @@
 "use client"
 
-import { MDConnection } from "@motherduck/wasm-client"
+import type { MDConnection } from "@motherduck/wasm-client"
 import { useState, useEffect, useContext, createContext } from "react"
 
+// Create a context for DuckDB
 const DuckDBContext = createContext<{
 	isInitialized: boolean
 	connection: MDConnection | null
@@ -30,42 +31,46 @@ export function MotherDuckProvider({
 		}
 
 		const establishConnection = async () => {
-			if (typeof window === "undefined") {
-				console.warn("Attempted to establish connection on the server side.")
-				return
-			}
-
 			if (typeof Worker === "undefined") {
 				console.error("Web Workers are not supported in this environment.")
 				return
 			}
 
-			let _connection: MDConnection | null = null
+			let MDConnection:
+				| typeof import("@motherduck/wasm-client").MDConnection
+				| null = null
 			try {
-				_connection = MDConnection.create({ mdToken })
+				// Dynamically import MDConnection
+				MDConnection = await import("@motherduck/wasm-client").then(
+					(mod) => mod.MDConnection
+				)
+				if (!MDConnection) {
+					console.error("Failed to load MDConnection")
+					return
+				}
+				const _connection = MDConnection.create({ mdToken })
+
+				const success = await _connection.isInitialized()
+				setIsInitialized(success)
+
+				const connectionId = _connection.id
+
+				if (success) {
+					console.debug("Initialized DuckDB connection", {
+						mdToken,
+						connectionId,
+					})
+				} else {
+					console.warn("Failed to initialize DuckDB connection", {
+						mdToken,
+						connectionId,
+					})
+				}
+
+				setConnection(_connection)
 			} catch (error) {
 				console.error("Failed to create DuckDB connection", error)
-				return
 			}
-
-			const success = await _connection.isInitialized()
-			setIsInitialized(success)
-
-			const connectionId = _connection.id
-
-			if (success) {
-				console.debug("Initialized DuckDB connection", {
-					mdToken,
-					connectionId,
-				})
-			} else {
-				console.warn("Failed to initialize DuckDB connection", {
-					mdToken,
-					connectionId,
-				})
-			}
-
-			setConnection(_connection)
 		}
 
 		establishConnection()
